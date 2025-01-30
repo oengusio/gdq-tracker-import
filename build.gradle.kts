@@ -1,4 +1,5 @@
 plugins {
+    application
     kotlin("jvm") version libs.versions.kotlin
 }
 
@@ -7,10 +8,11 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 dependencies {
-    implementation(libs.clikt)
+    implementation(libs.jline)
 
     testImplementation(kotlin("test"))
 }
@@ -18,6 +20,11 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+application {
+    mainClass.set("net.oengus.gdqimporter.MainKt")
+}
+
 kotlin {
     jvmToolchain(21)
 }
