@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version libs.versions.kotlin
 }
 
 group = "net.oengus"
@@ -10,6 +10,8 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.clikt)
+
     testImplementation(kotlin("test"))
 }
 
