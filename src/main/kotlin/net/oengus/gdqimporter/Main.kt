@@ -1,5 +1,6 @@
 package net.oengus.gdqimporter
 
+import org.jline.consoleui.elements.ConfirmChoice
 import org.jline.consoleui.prompt.ConsolePrompt
 import org.jline.consoleui.prompt.PromptResultItemIF
 import org.jline.consoleui.prompt.builder.PromptBuilder
@@ -39,6 +40,17 @@ private fun askSetupQuestions(terminal: Terminal) {
             .defaultValue("https://tracker.gamesdonequick.com/tracker/")
             .addPrompt()
 
+        createInputPrompt()
+            .name("trackerUsername")
+            .message("Username for tracker: ")
+            .addPrompt()
+
+        createInputPrompt()
+            .name("trackerPassword")
+            .message("Password for tracker: ")
+            .mask('*')
+            .addPrompt()
+
         // todo: login to tracker
     }
 
@@ -68,6 +80,12 @@ private fun askEventQuestions(terminal: Terminal) {
             .newItem("test").name("Test item 1").add()
             .newItem("test2").name("Test item 2").add()
             .addPrompt()
+
+        createConfirmPromp()
+            .name("paddHour")
+            .message("Add an hour padding to the last run as a buffer")
+            .defaultValue(ConfirmChoice.ConfirmationValue.YES)
+            .addPrompt()
     }
 }
 
@@ -80,6 +98,6 @@ fun main() {
         .build()
         .use { terminal ->
             askSetupQuestions(terminal)
-            askEventQuestions(terminal)
+//            askEventQuestions(terminal)
         }
 }
