@@ -1,6 +1,7 @@
 plugins {
     application
     kotlin("jvm") version libs.versions.kotlin
+    id("com.gradleup.shadow") version libs.versions.shadow
 }
 
 group = "net.oengus"
@@ -13,6 +14,7 @@ repositories {
 
 dependencies {
     implementation(libs.jline)
+    implementation(libs.jline.console)
 
     testImplementation(kotlin("test"))
 }

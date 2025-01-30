@@ -1,52 +1,74 @@
 package net.oengus.gdqimporter
 
-import org.jline.reader.LineReaderBuilder
+import org.jline.consoleui.prompt.ConsolePrompt
+import org.jline.consoleui.prompt.PromptResultItemIF
+import org.jline.consoleui.prompt.builder.PromptBuilder
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
 
-fun String.isValidUrl(): Boolean {
-    val urlRegex = """^https?://[\w\-]+(\.[\w\-]+)+[/#?]?.*$""".toRegex()
-    return urlRegex.matches(this)
-}
+fun ConsolePrompt.runPrompt(builder: PromptBuilder.() -> Unit): Map<String, PromptResultItemIF> {
+    val resultMap = mutableMapOf<String, PromptResultItemIF>()
 
-fun String.orDefault(default: String) = ifEmpty { default }
+    val pb = this.promptBuilder
+
+    builder(pb)
+
+    this.prompt(
+        mutableListOf(),
+        pb.build(),
+        resultMap
+    )
+
+    return resultMap
+}
 
 // TODO: if these settings are set we can ignore them
 private fun askSetupQuestions(terminal: Terminal) {
-    val reader = LineReaderBuilder.builder().terminal(terminal).build()
+    val prompt = ConsolePrompt(terminal)
 
-    val oengusUrl = reader.readLine("Enter Oengus URL (default: https://oengus.io/): ").orDefault("https://oengus.io/")
+    val resultMap = prompt.runPrompt {
+        createInputPrompt()
+            .name("oengusUrl")
+            .message("Oengus URL: ")
+            .defaultValue("https://oengus.io/")
+            .addPrompt()
 
-    terminal.writer().println("Oengus URL: $oengusUrl.")
+        createInputPrompt()
+            .name("trackerUrl")
+            .message("Tracker url: ")
+            .defaultValue("https://tracker.gamesdonequick.com/tracker/")
+            .addPrompt()
 
-    var trackerUrl = ""
-
-    while (trackerUrl.isEmpty()) {
-        trackerUrl = reader.readLine("Enter Tracker URL (example https://tracker.gamesdonequick.com/tracker/): ")
-
-        if (!trackerUrl.isValidUrl()) {
-            terminal.writer().println("That is not a valid url")
-            trackerUrl = ""
-        }
+        // todo: login to tracker
     }
 
-    terminal.writer().println("Tracker URL: $trackerUrl.")
+    println("\nresult=$resultMap")
 
-    terminal.writer().println("Settings stored in config.json. You can edit this later")
+    // TODO: write code
+
+    println("Settings stored in config.json. You can edit this later")
 }
 
 private fun askEventQuestions(terminal: Terminal) {
-    val reader = LineReaderBuilder.builder().terminal(terminal).build()
+    val prompt = ConsolePrompt(terminal)
 
-    reader.printAbove("====== Oengus Event Config ======")
+    val marathonShortResult = prompt.runPrompt {
+        createInputPrompt()
+            .name("eventShort")
+            .message("Shortcode (eg uksggre25): ")
+            .addPrompt()
+    }
 
-    val shortCode = reader.readLine("Shortcode (eg uksggre25): ")
-    val scheduleSlug = reader.readLine("Slug of your schedule (eg stream-1): ")
+    println("Fetching schedules......")
 
-
-    reader.printAbove("====== Tracker Event Config ======")
-
-    val eventId = reader.readLine("Event short: ")
+    val schedulesResult = prompt.runPrompt {
+        createListPrompt()
+            .name("schedule")
+            .message("Select your schedule")
+            .newItem("test").name("Test item 1").add()
+            .newItem("test2").name("Test item 2").add()
+            .addPrompt()
+    }
 }
 
 // Needs to create config.json
