@@ -23,6 +23,8 @@ fun ConsolePrompt.runPrompt(builder: PromptBuilder.() -> Unit): Map<String, Prom
     return resultMap
 }
 
+lateinit var tracker: TrackerApi
+
 // TODO: if these settings are set we can ignore them
 private fun askSetupQuestions(terminal: Terminal) {
     val prompt = ConsolePrompt(terminal)
@@ -50,15 +52,21 @@ private fun askSetupQuestions(terminal: Terminal) {
             .message("Password for tracker: ")
             .mask('*')
             .addPrompt()
-
-        // todo: login to tracker
     }
 
     println("\nresult=$resultMap")
 
-    // TODO: write code
+    tracker = TrackerApi(resultMap["trackerUrl"]!!.result)
 
-    println("Settings stored in config.json. You can edit this later")
+    println("\nLogging in to tracker.....")
+
+    tracker.login(resultMap["trackerUsername"]!!.result, resultMap["trackerPassword"]!!.result)
+
+    println("Login successful!")
+
+    // TODO: write code to save config
+
+    println("TODO: Settings stored in config.json. You can edit this later")
 }
 
 private fun askEventQuestions(terminal: Terminal) {
