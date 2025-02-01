@@ -1,11 +1,17 @@
 package net.oengus.gdqimporter
 
+import kotlinx.serialization.json.Json
+import net.oengus.gdqimporter.objects.Settings
 import org.jline.consoleui.elements.ConfirmChoice
 import org.jline.consoleui.prompt.ConsolePrompt
 import org.jline.consoleui.prompt.PromptResultItemIF
 import org.jline.consoleui.prompt.builder.PromptBuilder
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 fun ConsolePrompt.runPrompt(builder: PromptBuilder.() -> Unit): Map<String, PromptResultItemIF> {
     val resultMap = mutableMapOf<String, PromptResultItemIF>()
@@ -23,10 +29,44 @@ fun ConsolePrompt.runPrompt(builder: PromptBuilder.() -> Unit): Map<String, Prom
     return resultMap
 }
 
+private fun loadSettings(): Settings? {
+    val settingsFile = File(SETTINGS_FILE_NAME)
+
+    if (!settingsFile.exists()) {
+        return null
+    }
+
+    return Json.decodeFromString(
+        settingsFile.readText(StandardCharsets.UTF_8)
+    )
+}
+
+private fun saveSettings(settings: Settings) {
+    val jsonString = Json.encodeToString(settings)
+
+
+    val settingsFile = File(SETTINGS_FILE_NAME)
+
+    if (settingsFile.exists()) {
+        settingsFile.delete()
+    }
+
+    Files.write(
+        settingsFile.toPath(),
+        jsonString.toByteArray(StandardCharsets.UTF_8),
+        StandardOpenOption.CREATE_NEW
+    )
+}
+
 lateinit var tracker: TrackerApi
 
-// TODO: if these settings are set we can ignore them
-private fun askSetupQuestions(terminal: Terminal) {
+private fun setupTracker(settings: Settings): Boolean {
+    tracker = TrackerApi(settings.trackerUrl)
+
+    return tracker.login(settings.trackerUsername, settings.trackerPassword)
+}
+
+private fun askSetupQuestions(terminal: Terminal): Settings {
     val prompt = ConsolePrompt(terminal)
 
     val resultMap = prompt.runPrompt {
@@ -56,25 +96,37 @@ private fun askSetupQuestions(terminal: Terminal) {
 
     println("\nresult=$resultMap")
 
-    tracker = TrackerApi(resultMap["trackerUrl"]!!.result)
+    val settings = Settings(
+        oengusUrl = resultMap["oengusUrl"]!!.result,
+        trackerUrl = resultMap["trackerUrl"]!!.result,
+        trackerUsername = resultMap["trackerUsername"]!!.result,
+        trackerPassword = resultMap["trackerPassword"]!!.result,
+    )
 
     println("\nLogging in to tracker.....")
 
-    val success = tracker.login(resultMap["trackerUsername"]!!.result, resultMap["trackerPassword"]!!.result)
+    val success = setupTracker(settings)
 
     if (success) {
         println("Login successful!")
 
-        // TODO: write code to save config
+        saveSettings(settings)
 
-        println("TODO: Settings stored in config.json. You can edit this later")
+        println("Settings stored in $SETTINGS_FILE_NAME. You can edit this later")
         println("Configuration complete, preparing import")
-    } else {
-        println("Login failed, please check your credentials and try again")
+
+        // Sleep so people can read
+        Thread.sleep(1500)
+
+        return settings
     }
+
+    println("Login failed, please check your credentials and try again")
 
     // Sleep so people can read
     Thread.sleep(1500)
+
+    throw RuntimeException("Failed to setup tracker")
 }
 
 private fun askEventQuestions(terminal: Terminal) {
@@ -113,7 +165,15 @@ fun main() {
         .system(true)
         .build()
         .use { terminal ->
-            askSetupQuestions(terminal)
+            var storedSettings = loadSettings()
+
+            println("Settings=$storedSettings")
+
+            if (storedSettings == null) {
+                storedSettings = askSetupQuestions(terminal)
+            }
+
+
 //            askEventQuestions(terminal)
         }
 }

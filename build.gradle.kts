@@ -2,6 +2,7 @@ plugins {
     application
     kotlin("jvm") version libs.versions.kotlin
     id("com.gradleup.shadow") version libs.versions.shadow
+    kotlin("plugin.serialization") version libs.versions.plugin.serialisation
 }
 
 group = "net.oengus"
@@ -16,6 +17,7 @@ dependencies {
     implementation(libs.jline)
     implementation(libs.jline.console)
     implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(kotlin("test"))
 }

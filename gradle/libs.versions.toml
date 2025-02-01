@@ -3,9 +3,13 @@ kotlin = "2.1.0"
 jline = "3.28.0"
 shadow = "8.3.5"
 okhttp = "4.12.0"
+kotlinx-serialization-json = "1.8.0"
+plugin-serialisation = "2.1.10"
+
 
 [libraries]
 jline = { group = "org.jline", name = "jline", version.ref = "jline" }
 jline-console = { group = "org.jline", name = "jline-console-ui", version.ref = "jline" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
