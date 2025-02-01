@@ -60,13 +60,21 @@ private fun askSetupQuestions(terminal: Terminal) {
 
     println("\nLogging in to tracker.....")
 
-    tracker.login(resultMap["trackerUsername"]!!.result, resultMap["trackerPassword"]!!.result)
+    val success = tracker.login(resultMap["trackerUsername"]!!.result, resultMap["trackerPassword"]!!.result)
 
-    println("Login successful!")
+    if (success) {
+        println("Login successful!")
 
-    // TODO: write code to save config
+        // TODO: write code to save config
 
-    println("TODO: Settings stored in config.json. You can edit this later")
+        println("TODO: Settings stored in config.json. You can edit this later")
+        println("Configuration complete, preparing import")
+    } else {
+        println("Login failed, please check your credentials and try again")
+    }
+
+    // Sleep so people can read
+    Thread.sleep(1500)
 }
 
 private fun askEventQuestions(terminal: Terminal) {

@@ -15,6 +15,7 @@ repositories {
 dependencies {
     implementation(libs.jline)
     implementation(libs.jline.console)
+    implementation(libs.okhttp)
 
     testImplementation(kotlin("test"))
 }
