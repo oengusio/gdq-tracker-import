@@ -3,6 +3,8 @@ package net.oengus.gdqimporter
 import kotlinx.serialization.json.Json
 import net.oengus.gdqimporter.objects.ScheduleFetchSettings
 import net.oengus.gdqimporter.objects.Settings
+import net.oengus.gdqimporter.objects.TRun
+import net.oengus.gdqimporter.objects.TRunner
 import org.jline.consoleui.elements.ConfirmChoice
 import org.jline.consoleui.prompt.ConsolePrompt
 import org.jline.consoleui.prompt.PromptResultItemIF
@@ -203,7 +205,65 @@ private fun askEventQuestions(terminal: Terminal): ScheduleFetchSettings? {
     )
 }
 
-private fun startImport(settings: Settings, scheduleFetchSettings: ScheduleFetchSettings) {}
+private fun getOrCreateRunnerOnTracker(username: String): Int {
+    val runnerByName = tracker.findRunner(username)
+        ?: return tracker.createRunner(username) ?: throw RuntimeException("Failed to create runner on tracker")
+
+    return runnerByName.id
+}
+
+private fun startImport(terminal: Terminal, settings: Settings, data: ScheduleFetchSettings) {
+    terminal.writer().flush()
+
+    terminal.writer().println("Starting import, this will take a long time, keep your pc on :)")
+
+    terminal.writer().println("Clearing current schedule on tracker")
+
+    tracker.clearSchedule(data.shortCode)
+
+    terminal.writer().println("Importing runs (setup blocks are ignored)")
+
+    val schedule = oengus.fetchSchedule(data.marathonId, data.scheduleSlug)
+
+    // username -> tracker user id
+    val runnerMap = mutableMapOf<String, Int>()
+
+    schedule.lines.filter { !it.setupBlock }.forEach { line ->
+        terminal.writer().write("Processing ${line.game} - ${line.category}")
+
+        val runnerIds = mutableListOf<Int>()
+        val runnerNames = line.runners.map { it.profile?.username ?: it.runnerName }
+
+        for (runnerName in runnerNames) {
+            terminal.writer().write("Mapping $runnerName to tracker runner")
+            runnerIds.add(runnerMap.getOrPut(runnerName) {
+                getOrCreateRunnerOnTracker(runnerName)
+            })
+        }
+
+        val trackerRUn = TRun(
+            "speedrun",
+            -1,
+            line.game,
+            line.game,
+            line.game,
+            "",
+            line.category,
+            line.type.contains("COOP"),
+            "ONSITE",
+            line.console,
+            null,
+            runnerIds.map { TRunner("talent", it, "") },
+            line.position
+        )
+
+        terminal.writer().write("Saving ${line.game} - ${line.category} to tracker")
+    }
+
+    terminal.writer().println("2.2. Inserting run data (taking order from oengus data)")
+    terminal.writer().println("3. Done")
+
+}
 
 // Needs to create config.json
 // - oengusUrl, default https://oengus.io/

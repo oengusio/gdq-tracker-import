@@ -18,7 +18,20 @@ data class OScheduleInfo(
 data class OSchedule(val name: String, val lines: List<OLine>)
 
 @Serializable
-data class OLine(val runner: String, val estimate: String)
+data class OLine(
+    val id: Int,
+    val game: String,
+    val console: String,
+    val emulated: Boolean,
+    val ratio: String,
+    val type: String,
+    val runners: List<ORunner>,
+    val category: String,
+    val estimate: String,
+    val setupTime: String,
+    val position: Int,
+    val setupBlock: Boolean,
+)
 
 @Serializable
 data class OProfile(
