@@ -1,6 +1,7 @@
 package net.oengus.gdqimporter
 
 import kotlinx.serialization.json.Json
+import net.oengus.gdqimporter.objects.ScheduleFetchSettings
 import net.oengus.gdqimporter.objects.Settings
 import org.jline.consoleui.elements.ConfirmChoice
 import org.jline.consoleui.prompt.ConsolePrompt
@@ -44,7 +45,6 @@ private fun loadSettings(): Settings? {
 private fun saveSettings(settings: Settings) {
     val jsonString = Json.encodeToString(settings)
 
-
     val settingsFile = File(SETTINGS_FILE_NAME)
 
     if (settingsFile.exists()) {
@@ -64,6 +64,12 @@ private fun setupTracker(settings: Settings): Boolean {
     tracker = TrackerApi(settings.trackerUrl)
 
     return tracker.login(settings.trackerUsername, settings.trackerPassword)
+}
+
+lateinit var oengus: OengusApi
+
+private fun setupOengus(settings: Settings) {
+    oengus = OengusApi(settings.oengusUrl)
 }
 
 private fun askSetupQuestions(terminal: Terminal): Settings {
@@ -129,24 +135,47 @@ private fun askSetupQuestions(terminal: Terminal): Settings {
     throw RuntimeException("Failed to setup tracker")
 }
 
-private fun askEventQuestions(terminal: Terminal) {
+private fun askEventQuestions(terminal: Terminal): ScheduleFetchSettings? {
     val prompt = ConsolePrompt(terminal)
 
     val marathonShortResult = prompt.runPrompt {
         createInputPrompt()
             .name("eventShort")
-            .message("Shortcode (eg uksggre25): ")
+            .message("Shortcode from tracker (eg uksggre25): ")
             .addPrompt()
+
+        createInputPrompt()
+            .name("marathonId")
+            .message("Marathon id from oengus (eg uksggre25): ")
+            .addPrompt()
+
+        // TODO: split between tracker short and oengus marathon id
     }
 
-    println("Fetching schedules......")
+    terminal.writer().flush()
+    terminal.writer().println("Fetching schedules......")
+
+    val trackerShort = marathonShortResult["eventShort"]!!.result
+    val marathonId = marathonShortResult["marathonId"]!!.result
+    val schedules = oengus.fetchSchedules(marathonId).filter { it.published }
+
+    if (schedules.isEmpty()) {
+        prompt.close()
+
+        println("No schedules found, did you publish one?")
+
+        return null
+    }
 
     val schedulesResult = prompt.runPrompt {
         createListPrompt()
             .name("schedule")
             .message("Select your schedule")
-            .newItem("test").name("Test item 1").add()
-            .newItem("test2").name("Test item 2").add()
+            .apply {
+                schedules.forEach { schedule ->
+                    newItem(schedule.slug).text("${schedule.name} (${schedule.slug})").add()
+                }
+            }
             .addPrompt()
 
         createConfirmPromp()
@@ -155,7 +184,26 @@ private fun askEventQuestions(terminal: Terminal) {
             .defaultValue(ConfirmChoice.ConfirmationValue.YES)
             .addPrompt()
     }
+
+    val scheduleSlug = schedulesResult["schedule"]!!.result
+    val paddHour = schedulesResult["paddHour"]!!.result == "YES"
+
+    prompt.close()
+
+    println("Schedule selected, copying data")
+
+    println(scheduleSlug)
+    println(paddHour)
+
+    return ScheduleFetchSettings(
+        trackerShort,
+        marathonId,
+        scheduleSlug,
+        paddHour
+    )
 }
+
+private fun startImport(settings: Settings, scheduleFetchSettings: ScheduleFetchSettings) {}
 
 // Needs to create config.json
 // - oengusUrl, default https://oengus.io/
@@ -171,9 +219,13 @@ fun main() {
 
             if (storedSettings == null) {
                 storedSettings = askSetupQuestions(terminal)
+            } else {
+                println("Using stored settings from config.json")
+                setupTracker(storedSettings)
             }
 
+            setupOengus(storedSettings)
 
-//            askEventQuestions(terminal)
+            val data = askEventQuestions(terminal) ?: return
         }
 }
