@@ -9,9 +9,9 @@ Import your Oengus schedule into the GDQ tracker!
 
 ## Installation
 1. Install java and add it to your PATH
-2. Download `gdq-tracker-oengus.jar` from the releases
+2. Download `gdq-tracker-import-<version>-all.jar` from the releases
 3. Open a command prompt/terminal in the folder where you downloaded the jar
-4. Run `java -jar gdq-tracker-oengus.jar` and follow the instructions on screen
+4. Run `java -jar gdq-tracker-import-<version>-all.jar` and follow the instructions on screen
 
 ## Running locally
 (welcome to hell) `./gradlew build ;; java -jar build/libs/gdq-tracker-import-1.0-SNAPSHOT-all.jar`
