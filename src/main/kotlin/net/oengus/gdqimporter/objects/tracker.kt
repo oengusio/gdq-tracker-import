@@ -12,6 +12,12 @@ data class TResults<T>(
 )
 
 @Serializable
+data class TEventSearch(
+    val model: String,
+    val pk: Int,
+)
+
+@Serializable
 data class TRunner(
     val type: String,
     val id: Int,
@@ -39,7 +45,10 @@ data class TRun(
     // comentators
     // starttime
     // endtime
-    val order: Int
-    // run_time
+    val order: Int,
+    @SerialName("run_time")
+    val runTime: String,
     // setup_time
+    @SerialName("setup_time")
+    val setupTime: String,
 )

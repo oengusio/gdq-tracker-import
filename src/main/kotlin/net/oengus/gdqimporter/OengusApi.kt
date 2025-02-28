@@ -1,6 +1,5 @@
 package net.oengus.gdqimporter
 
-import kotlinx.serialization.json.Json
 import net.oengus.gdqimporter.objects.ODataList
 import net.oengus.gdqimporter.objects.OSchedule
 import net.oengus.gdqimporter.objects.OScheduleInfo
@@ -31,7 +30,7 @@ class OengusApi(private val oengusUrl: String) {
             val scheduleInfos = response.body?.let {
                 val jsonString = it.string()
 
-                Json.decodeFromString<ODataList<OScheduleInfo>>(jsonString)
+                json.decodeFromString<ODataList<OScheduleInfo>>(jsonString)
             }
 
             return scheduleInfos?.data ?: emptyList()
@@ -47,7 +46,7 @@ class OengusApi(private val oengusUrl: String) {
             return response.body!!.let {
                 val jsonString = it.string()
 
-                Json.decodeFromString(jsonString)
+                json.decodeFromString(jsonString)
             }
         }
     }

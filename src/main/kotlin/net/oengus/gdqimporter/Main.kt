@@ -150,14 +150,13 @@ private fun askEventQuestions(terminal: Terminal): ScheduleFetchSettings? {
             .name("marathonId")
             .message("Marathon id from oengus (eg uksggre25): ")
             .addPrompt()
-
-        // TODO: split between tracker short and oengus marathon id
     }
 
-    terminal.writer().flush()
     terminal.writer().println("Fetching schedules......")
 
     val trackerShort = marathonShortResult["eventShort"]!!.result
+    val trackerEventId = tracker.findEventIdByShort(trackerShort) ?: throw RuntimeException("Failed to find event ID by shortcode")
+
     val marathonId = marathonShortResult["marathonId"]!!.result
     val schedules = oengus.fetchSchedules(marathonId).filter { it.published }
 
@@ -198,7 +197,7 @@ private fun askEventQuestions(terminal: Terminal): ScheduleFetchSettings? {
     println(paddHour)
 
     return ScheduleFetchSettings(
-        trackerShort,
+        trackerEventId,
         marathonId,
         scheduleSlug,
         paddHour
@@ -213,15 +212,13 @@ private fun getOrCreateRunnerOnTracker(username: String): Int {
 }
 
 private fun startImport(terminal: Terminal, settings: Settings, data: ScheduleFetchSettings) {
-    terminal.writer().flush()
+    println("Starting import, this will take a long time, keep your pc on :)")
 
-    terminal.writer().println("Starting import, this will take a long time, keep your pc on :)")
+    println("Clearing current schedule on tracker")
 
-    terminal.writer().println("Clearing current schedule on tracker")
+    tracker.clearSchedule(data.trackerEventId)
 
-    tracker.clearSchedule(data.shortCode)
-
-    terminal.writer().println("Importing runs (setup blocks are ignored)")
+    println("Importing runs (setup blocks are ignored)")
 
     val schedule = oengus.fetchSchedule(data.marathonId, data.scheduleSlug)
 
@@ -229,13 +226,13 @@ private fun startImport(terminal: Terminal, settings: Settings, data: ScheduleFe
     val runnerMap = mutableMapOf<String, Int>()
 
     schedule.lines.filter { !it.setupBlock }.forEach { line ->
-        terminal.writer().write("Processing ${line.game} - ${line.category}")
+        println("Processing ${line.game} - ${line.category}")
 
         val runnerIds = mutableListOf<Int>()
         val runnerNames = line.runners.map { it.profile?.username ?: it.runnerName }
 
         for (runnerName in runnerNames) {
-            terminal.writer().write("Mapping $runnerName to tracker runner")
+            println("Mapping $runnerName to tracker runner")
             runnerIds.add(runnerMap.getOrPut(runnerName) {
                 getOrCreateRunnerOnTracker(runnerName)
             })
@@ -254,15 +251,41 @@ private fun startImport(terminal: Terminal, settings: Settings, data: ScheduleFe
             line.console,
             null,
             runnerIds.map { TRunner("talent", it, "") },
-            line.position
+            line.position,
+            line.estimate.durationToGDQ(),
+            line.setupTime.durationToGDQ()
         )
 
-        terminal.writer().write("Saving ${line.game} - ${line.category} to tracker")
+        println("Saving ${line.game} - ${line.category} to tracker")
+
+        tracker.insertRun(data.trackerEventId, trackerRUn)
     }
 
-    terminal.writer().println("2.2. Inserting run data (taking order from oengus data)")
-    terminal.writer().println("3. Done")
+    if (data.padHour) {
+        println("Adding an hour of padding")
+        val paddingRun = TRun(
+            "speedrun",
+            -1,
+            "Padding",
+            "Padding",
+            "Padding",
+            "",
+            "wait%",
+            false,
+            "ONSITE",
+            "PC",
+            null,
+            listOf(TRunner("talent", 1, "")),
+            schedule.lines.size + 5,
+            "01:00:00",
+            "00:15:00"
+        )
 
+        tracker.insertRun(data.trackerEventId, paddingRun)
+    }
+
+//    terminal.writer().println("2.2. Inserting run data (taking order from oengus data)\n")
+    println("3. Done")
 }
 
 // Needs to create config.json
@@ -287,5 +310,9 @@ fun main() {
             setupOengus(storedSettings)
 
             val data = askEventQuestions(terminal) ?: return
+
+            startImport(terminal, storedSettings, data)
         }
+
+    println()
 }

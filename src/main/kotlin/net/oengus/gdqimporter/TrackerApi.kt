@@ -1,11 +1,13 @@
 package net.oengus.gdqimporter
 
-import kotlinx.serialization.json.Json
 import net.oengus.gdqimporter.http.CookieJar
+import net.oengus.gdqimporter.objects.TEventSearch
 import net.oengus.gdqimporter.objects.TResults
 import net.oengus.gdqimporter.objects.TRun
 import net.oengus.gdqimporter.objects.TRunner
-import okhttp3.*
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.nio.charset.StandardCharsets
 
 
@@ -47,6 +49,24 @@ class TrackerApi(private val trackerUrl: String) {
         }
     }
 
+    fun findEventIdByShort(short: String): Int? {
+        val url = getTrackerUrl("/search/?short=$short&type=event")
+
+        val req = Request.Builder()
+            .url(url)
+            .build()
+
+        client.newCall(req).execute().use { response ->
+            val eventList = response.body?.let {
+                val jsonString = it.string()
+
+                json.decodeFromString<List<TEventSearch>>(jsonString)
+            }
+
+            return eventList?.firstOrNull()?.pk
+        }
+    }
+
     fun findRunner(username: String) = findRunnerFromUrl(getTrackerUrl("/api/v2/talent?name=$username"))
 
     fun findRunnerById(id: Int) = findRunnerFromUrl(getTrackerUrl("/api/v2/talent?id=$id"))
@@ -60,7 +80,7 @@ class TrackerApi(private val trackerUrl: String) {
             val userList = response.body?.let {
                 val jsonString = it.string()
 
-                Json.decodeFromString<TResults<TRunner>>(jsonString)
+                json.decodeFromString<TResults<TRunner>>(jsonString)
             }
 
             return userList?.results?.firstOrNull()
@@ -105,12 +125,112 @@ class TrackerApi(private val trackerUrl: String) {
         return null
     }
 
+    fun fetchRuns(eventId: Int): List<TRun> {
+        val url = getTrackerUrl("/api/v2/events/$eventId/runs")
+
+        val req = Request.Builder()
+            .url(url)
+            .build()
+
+
+        client.newCall(req).execute().use { response ->
+            val runList = response.body?.let {
+                val jsonString = it.string()
+
+                json.decodeFromString<TResults<TRun>>(jsonString)
+            }
+
+            return runList?.results ?: emptyList()
+        }
+    }
+
     fun clearSchedule(eventId: Int) {
-        //
+        val runIds = fetchRuns(eventId).map { it.id }
+
+        if (runIds.isEmpty()) {
+            return
+        }
+
+        val deleteUrl = getAdminUrl("/tracker/speedrun/")
+
+        val formBody = FormBody.Builder(StandardCharsets.UTF_8)
+            .apply {
+                runIds.forEach {
+                    add("_selected_action", it.toString())
+                }
+            }
+            .add("action", "delete_selected")
+            .add("post", "yes")
+            .add("csrfmiddlewaretoken", crossSiteToken ?: "")
+            .build()
+
+        val req = Request.Builder()
+            .url(deleteUrl)
+            .post(formBody)
+            .addHeader("referer", deleteUrl)
+            .build()
+
+        client.newCall(req).execute().use {
+            if (it.code != 200) {
+                throw RuntimeException("Failed to clear schedule, status code: ${it.code}")
+            }
+        }
     }
 
     fun insertRun(eventId: Int, run: TRun) {
-        //
+        val insertUrl = getAdminUrl("/tracker/speedrun/add/")
+
+        val formBody = FormBody.Builder(StandardCharsets.UTF_8)
+            .add("name", run.name)
+            .add("display_name", run.displayName)
+            .add("twitch_name", run.twitchName)
+            .add("category", run.category)
+            .add("console", run.console)
+            .add("release_year", "")
+            .add("description", "")
+            .add("event", eventId.toString())
+            .add("initial-event", "0")
+            .add("order", run.order.toString())
+            .add("anchor_time_0", "")
+            .add("anchor_time_1", "")
+            .add("run_time", run.runTime)
+            .add("setup_time", run.setupTime)
+            .apply {
+                run.runners.forEach {
+                    add("runners", it.id.toString())
+                }
+            }
+            .add("onsite", "ONSITE")
+            .add("tech_notes", "")
+            .add("layout", "")
+            .add("priority_tag", "")
+            .add("video_links-TOTAL_FORMS", "1")
+            .add("video_links-INITIAL_FORMS", "0")
+            .add("video_links-MIN_NUM_FORMS", "0")
+            .add("video_links-MAX_NUM_FORMS", "1000")
+            .add("video_links-0-link_type", "")
+            .add("video_links-0-url", "")
+            .add("video_links-0-id", "")
+            .add("video_links-0-run", "")
+            .add("video_links-__prefix__-link_type", "")
+            .add("video_links-__prefix__-url", "")
+            .add("video_links-__prefix__-id", "")
+            .add("video_links-__prefix__-run", "")
+            .add("_continue", "Save+and+continue+editing")
+            .add("csrfmiddlewaretoken", crossSiteToken ?: "")
+            .build()
+
+        val req = Request.Builder()
+            .url(insertUrl)
+            .post(formBody)
+            .addHeader("referer", insertUrl)
+            .build()
+
+        client.newCall(req).execute().use {
+            if (it.code != 200) {
+                throw RuntimeException("Failed to insert run ${run.name}, status code: ${it.code}")
+            }
+        }
     }
 
     private fun fetchCSRFToken(): String? {

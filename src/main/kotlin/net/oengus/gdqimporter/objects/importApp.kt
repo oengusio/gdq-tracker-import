@@ -11,7 +11,7 @@ data class Settings(
 )
 
 data class ScheduleFetchSettings(
-    val shortCode: String,
+    val trackerEventId: Int,
     val marathonId: String,
     val scheduleSlug: String,
     val padHour: Boolean,
