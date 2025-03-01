@@ -12,9 +12,11 @@ data class TResults<T>(
 )
 
 @Serializable
-data class TEventSearch(
-    val model: String,
-    val pk: Int,
+data class TEvent(
+    val type: String,
+    val id: Int,
+    val short: String,
+    val name: String,
 )
 
 @Serializable

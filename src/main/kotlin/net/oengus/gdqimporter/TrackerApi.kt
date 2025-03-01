@@ -1,10 +1,7 @@
 package net.oengus.gdqimporter
 
 import net.oengus.gdqimporter.http.CookieJar
-import net.oengus.gdqimporter.objects.TEventSearch
-import net.oengus.gdqimporter.objects.TResults
-import net.oengus.gdqimporter.objects.TRun
-import net.oengus.gdqimporter.objects.TRunner
+import net.oengus.gdqimporter.objects.*
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -50,20 +47,25 @@ class TrackerApi(private val trackerUrl: String) {
     }
 
     fun findEventIdByShort(short: String): Int? {
-        val url = getTrackerUrl("/search/?short=$short&type=event")
+        val url = getTrackerUrl("/api/v2/events?short=$short")
 
         val req = Request.Builder()
             .url(url)
             .build()
 
         client.newCall(req).execute().use { response ->
-            val eventList = response.body?.let {
+            val results = response.body?.let {
                 val jsonString = it.string()
 
-                json.decodeFromString<List<TEventSearch>>(jsonString)
+                json.decodeFromString<TResults<TEvent>>(jsonString)
+            } ?: throw RuntimeException("Unable to parse event list: $response")
+
+            // In case we are not running the BSG fork
+            if (results.count > 1) {
+                return results.results.firstOrNull { it.short == short }?.id
             }
 
-            return eventList?.firstOrNull()?.pk
+            return results.results.firstOrNull()?.id
         }
     }
 

@@ -6,6 +6,7 @@ Import your Oengus schedule into the GDQ tracker!
   - Download here: https://www.azul.com/downloads/?version=java-21-lts&package=jre#zulu
 - Knowledge how to operate the command line
 - A basic understanding of URL structures
+- (optional but preferred) the [BSG version](https://github.com/BSGmarathon/donation-tracker-toplevel) of the donation tracker
 
 ## Installation
 1. Install java and add it to your PATH

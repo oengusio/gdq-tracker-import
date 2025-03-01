@@ -307,11 +307,13 @@ fun main() {
                 setupTracker(storedSettings)
             }
 
-            setupOengus(storedSettings)
+            println(tracker.findEventIdByShort("import"))
+
+            /*setupOengus(storedSettings)
 
             val data = askEventQuestions(terminal) ?: return
 
-            startImport(terminal, storedSettings, data)
+            startImport(terminal, storedSettings, data)*/
         }
 
     println()
