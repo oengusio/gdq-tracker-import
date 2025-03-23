@@ -1,6 +1,10 @@
 # GDQ tracker importer
 Import your Oengus schedule into the GDQ tracker!
 
+***DO NOT USE THIS TOOL TO CONTINUOUSLY SYNC YOUR SCHEDULE***
+
+Stuff will seriously break when you do that, especially when you added incentives to the tracker.
+
 ## Requirements
 - Java 21 (or newer)
   - Download here: https://www.azul.com/downloads/?version=java-21-lts&package=jre#zulu
