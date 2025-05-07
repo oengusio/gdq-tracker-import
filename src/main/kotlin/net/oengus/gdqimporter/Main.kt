@@ -176,7 +176,7 @@ private fun askEventQuestions(terminal: Terminal): ScheduleFetchSettings? {
     val schedulesResult = prompt.runPrompt {
         createListPrompt()
             .name("schedule")
-            .message("Select your schedule")
+            .message("Select your schedule (or press enter when there is only one)")
             .apply {
                 schedules.forEach { schedule ->
                     newItem(schedule.slug).text("${schedule.name} (${schedule.slug})").add()
@@ -256,7 +256,7 @@ private fun startImport(terminal: Terminal, settings: Settings, data: ScheduleFe
             line.console,
             null,
             runnerIds.map { TRunner("talent", it, "") },
-            line.position,
+            line.position * 10, // Add 10 to allow for inserting extra runs
             line.estimate.durationToGDQ(),
             line.setupTime.durationToGDQ()
         )
