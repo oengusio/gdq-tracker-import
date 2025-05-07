@@ -238,6 +238,8 @@ class TrackerApi(private val trackerUrl: String) {
     private fun fetchCSRFToken(): String? {
         val loginUrl = getAdminUrl("/login/")
 
+        println(loginUrl)
+
         val req = Request.Builder()
             .url(loginUrl)
             .build()
@@ -254,7 +256,8 @@ class TrackerApi(private val trackerUrl: String) {
 
     private val trackerBaseUrl: String
         get() {
-            var firstBase = this.trackerUrl.replace("/tracker", "")
+            // Fancy regex replace to fix cases like https://tracker.bsgmarathon.com/tracker/ and https://tracker.gamesdonequick.com/tracker/
+            var firstBase = this.trackerUrl.replace("([^/])/tracker".toRegex(), "$1")
 
             if (firstBase.endsWith("/")) {
                 firstBase = firstBase.substring(0, firstBase.length - 1)

@@ -78,15 +78,20 @@ private fun askSetupQuestions(terminal: Terminal): Settings {
     val prompt = ConsolePrompt(terminal)
 
     val resultMap = prompt.runPrompt {
+        createConfirmPromp()
+            .name("uselessConfirm")
+            .message("To start off, you will need to configure this application for future use. Confirm to continue.")
+            .addPrompt()
+
         createInputPrompt()
             .name("oengusUrl")
-            .message("Oengus URL: ")
+            .message("Oengus base URL (press enter to use default): ")
             .defaultValue("https://oengus.io/")
             .addPrompt()
 
         createInputPrompt()
             .name("trackerUrl")
-            .message("Tracker url: ")
+            .message("Tracker base url (press enter to use default): ")
             .defaultValue("https://tracker.gamesdonequick.com/tracker/")
             .addPrompt()
 
@@ -307,13 +312,11 @@ fun main() {
                 setupTracker(storedSettings)
             }
 
-            println(tracker.findEventIdByShort("import"))
-
-            /*setupOengus(storedSettings)
+            setupOengus(storedSettings)
 
             val data = askEventQuestions(terminal) ?: return
 
-            startImport(terminal, storedSettings, data)*/
+            startImport(terminal, storedSettings, data)
         }
 
     println()
