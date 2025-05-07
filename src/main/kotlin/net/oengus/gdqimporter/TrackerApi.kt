@@ -238,8 +238,6 @@ class TrackerApi(private val trackerUrl: String) {
     private fun fetchCSRFToken(): String? {
         val loginUrl = getAdminUrl("/login/")
 
-        println(loginUrl)
-
         val req = Request.Builder()
             .url(loginUrl)
             .build()
